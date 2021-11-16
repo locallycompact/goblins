@@ -166,7 +166,7 @@ deriveAddShrinks name = do
 
        else do
          fieldNames <- forM (dcFields con) (const (newName "field"))
-         let pat = ConP (dcName con) (map VarP fieldNames)
+         let pat = ConP (dcName con) [] (map VarP fieldNames)
 
          start <- [| $(pure (makeConPacker (dcName con) fieldNames))
                        <$> addShrinks $(pure (VarE (head fieldNames))) |]
@@ -228,13 +228,13 @@ deriveSeedGoblin name = do
   makeSeederClause con = do
     asName <- newName "argAs"
     fieldNames <- forM (dcFields con) (const (newName "field"))
-    let pat = AsP asName (ConP (dcName con) (map VarP fieldNames))
+    let pat = AsP asName (ConP (dcName con) [] (map VarP fieldNames))
 
     seedAs <- [| () <$ saveInBagOfTricks $(pure (VarE asName)) |]
     seedRest <- forM fieldNames $ \vName -> do
                   [| seeder $(pure (VarE vName)) |]
     let stmts = map NoBindS (seedAs:seedRest)
-    pure (Clause [pat] (NormalB (DoE stmts)) [])
+    pure (Clause [pat] (NormalB (DoE Nothing stmts)) [])
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -256,7 +256,7 @@ makeAccessors conName argNames =
   [ let front = replicate i WildP
         back  = replicate (length argNames - i - 1) WildP
         arg   = argNames !! i
-        pat = ConP conName (front ++ [VarP arg] ++ back)
+        pat = ConP conName [] (front ++ [VarP arg] ++ back)
      in LamE [pat] (VarE arg)
   | i <- [0 .. length argNames - 1]
   ]

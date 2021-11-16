@@ -85,6 +85,46 @@ instance GeneOps a => Goblin a Double where
     i <- transcribeGenesAsInt 100
     pure (fromIntegral i / 100)
 
+--------------------------------------------------------------------------------
+-- AddShrinks
+--------------------------------------------------------------------------------
+
+instance AddShrinks () where
+instance AddShrinks Bool where
+instance AddShrinks Char where
+instance AddShrinks Double where
+instance AddShrinks Integer where
+instance AddShrinks Natural where
+instance AddShrinks Int where
+instance AddShrinks Word8 where
+instance AddShrinks Word64 where
+
+deriveAddShrinks ''(,)
+deriveAddShrinks ''(,,)
+deriveAddShrinks ''(,,,)
+deriveAddShrinks ''(,,,,)
+deriveAddShrinks ''(,,,,,)
+deriveAddShrinks ''(,,,,,,)
+deriveAddShrinks ''(,,,,,,,)
+deriveAddShrinks ''(,,,,,,,,)
+deriveAddShrinks ''(,,,,,,,,,)
+deriveAddShrinks ''(,,,,,,,,,,)
+deriveAddShrinks ''Ratio
+
+instance (AddShrinks k, Ord k, AddShrinks v) => AddShrinks (Map.Map k v) where
+  addShrinks xs = Map.fromList <$> mapM addShrinks (Map.toList xs)
+
+instance AddShrinks a => AddShrinks [a] where
+  addShrinks ls = mapM addShrinks ls
+
+instance (AddShrinks a, Ord a) => AddShrinks (Set.Set a) where
+  addShrinks xs = Set.fromList <$> mapM addShrinks (Set.toList xs)
+
+instance AddShrinks a => AddShrinks (Maybe a) where
+  addShrinks Nothing  = pure Nothing
+  addShrinks (Just x) = Just <$> addShrinks x
+
+
 
 --------------------------------------------------------------------------------
 -- Composite goblins
@@ -263,45 +303,6 @@ instance (Goblin g k, Goblin g v, Ord k, Eq k, Eq v, AddShrinks (Map.Map k v),
       listLen <- transcribeGenesAsInt 15
       cs <- replicateM listLen conjure
       pure (Map.fromList cs)
-
---------------------------------------------------------------------------------
--- AddShrinks
---------------------------------------------------------------------------------
-
-instance AddShrinks () where
-instance AddShrinks Bool where
-instance AddShrinks Char where
-instance AddShrinks Double where
-instance AddShrinks Integer where
-instance AddShrinks Natural where
-instance AddShrinks Int where
-instance AddShrinks Word8 where
-instance AddShrinks Word64 where
-
-deriveAddShrinks ''(,)
-deriveAddShrinks ''(,,)
-deriveAddShrinks ''(,,,)
-deriveAddShrinks ''(,,,,)
-deriveAddShrinks ''(,,,,,)
-deriveAddShrinks ''(,,,,,,)
-deriveAddShrinks ''(,,,,,,,)
-deriveAddShrinks ''(,,,,,,,,)
-deriveAddShrinks ''(,,,,,,,,,)
-deriveAddShrinks ''(,,,,,,,,,,)
-deriveAddShrinks ''Ratio
-
-instance (AddShrinks k, Ord k, AddShrinks v) => AddShrinks (Map.Map k v) where
-  addShrinks xs = Map.fromList <$> mapM addShrinks (Map.toList xs)
-
-instance AddShrinks a => AddShrinks [a] where
-  addShrinks ls = mapM addShrinks ls
-
-instance (AddShrinks a, Ord a) => AddShrinks (Set.Set a) where
-  addShrinks xs = Set.fromList <$> mapM addShrinks (Set.toList xs)
-
-instance AddShrinks a => AddShrinks (Maybe a) where
-  addShrinks Nothing  = pure Nothing
-  addShrinks (Just x) = Just <$> addShrinks x
 
 --------------------------------------------------------------------------------
 -- SeedGoblin
